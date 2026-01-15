@@ -1,0 +1,27 @@
+apiVersion: nvidia.com/v1
+kind: ClusterPolicy
+metadata:
+  name: test-gpu-cluster-policy
+spec:
+  operator:
+    runtimeClass: nvidia
+  dcgmExporter:
+    enabled: true
+    repository: nvcr.io/nvidia/k8s
+    image: dcgm-exporter
+    version: 4.3.1-4.4.0-ubuntu22.04
+    service:
+      annotations:
+        test.example.com/annotation: "test-value"
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "9400"
+  dcgm:
+    enabled: false
+  driver:
+    enabled: true
+  toolkit:
+    enabled: true
+  devicePlugin:
+    enabled: true
+  validator:
+    plugin: {}

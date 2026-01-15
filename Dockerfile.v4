@@ -1,0 +1,18 @@
+# Multi-architecture Dockerfile for GPU Operator v25.3.2-workato-4
+# Includes fix for missing /opt/validator/manifests and other assets
+FROM 773267254890.dkr.ecr.us-east-1.amazonaws.com/nvidia/gpu-operator:v25.3.2-workato
+
+# Get the target architecture
+ARG TARGETARCH
+
+# Copy architecture-specific binaries with DCGM service annotations support + .dockerignore fix
+COPY --chmod=755 gpu-operator-${TARGETARCH} /usr/bin/gpu-operator
+COPY --chmod=755 gpuop-cfg-${TARGETARCH} /usr/bin/gpuop-cfg  
+COPY --chmod=755 nvidia-validator-${TARGETARCH} /usr/bin/nvidia-validator
+
+# Update version info
+ENV VERSION=v25.3.2-workato-4
+ENV GIT_COMMIT=67c592ff-dirty
+
+# Set the entrypoint
+ENTRYPOINT ["/usr/bin/gpu-operator"]

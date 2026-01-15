@@ -3158,3 +3158,122 @@ func TestTransformDriverWithResources(t *testing.T) {
 		})
 	}
 }
+
+func TestTransformDCGMExporterService(t *testing.T) {
+	testCases := []struct {
+		description     string
+		service         *corev1.Service
+		cpSpec          *gpuv1.ClusterPolicySpec
+		expectedService *corev1.Service
+	}{
+		{
+			description: "service with custom annotations",
+			service: &corev1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "nvidia-dcgm-exporter",
+					Annotations: map[string]string{
+						"prometheus.io/scrape": "true",
+					},
+				},
+				Spec: corev1.ServiceSpec{
+					Type: corev1.ServiceTypeClusterIP,
+				},
+			},
+			cpSpec: &gpuv1.ClusterPolicySpec{
+				DCGMExporter: gpuv1.DCGMExporterSpec{
+					ServiceSpec: &gpuv1.DCGMExporterServiceConfig{
+						Type: corev1.ServiceTypeNodePort,
+						Annotations: map[string]string{
+							"custom.annotation/key": "custom-value",
+							"another.annotation":    "another-value",
+						},
+					},
+				},
+			},
+			expectedService: &corev1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "nvidia-dcgm-exporter",
+					Annotations: map[string]string{
+						"prometheus.io/scrape":  "true",
+						"custom.annotation/key": "custom-value",
+						"another.annotation":    "another-value",
+					},
+				},
+				Spec: corev1.ServiceSpec{
+					Type: corev1.ServiceTypeNodePort,
+				},
+			},
+		},
+		{
+			description: "service without existing annotations",
+			service: &corev1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "nvidia-dcgm-exporter",
+				},
+				Spec: corev1.ServiceSpec{
+					Type: corev1.ServiceTypeClusterIP,
+				},
+			},
+			cpSpec: &gpuv1.ClusterPolicySpec{
+				DCGMExporter: gpuv1.DCGMExporterSpec{
+					ServiceSpec: &gpuv1.DCGMExporterServiceConfig{
+						Annotations: map[string]string{
+							"service.beta.kubernetes.io/aws-load-balancer-type": "nlb",
+						},
+					},
+				},
+			},
+			expectedService: &corev1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "nvidia-dcgm-exporter",
+					Annotations: map[string]string{
+						"service.beta.kubernetes.io/aws-load-balancer-type": "nlb",
+					},
+				},
+				Spec: corev1.ServiceSpec{
+					Type: corev1.ServiceTypeClusterIP,
+				},
+			},
+		},
+		{
+			description: "service with no annotations in config",
+			service: &corev1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "nvidia-dcgm-exporter",
+					Annotations: map[string]string{
+						"existing.annotation": "value",
+					},
+				},
+				Spec: corev1.ServiceSpec{
+					Type: corev1.ServiceTypeClusterIP,
+				},
+			},
+			cpSpec: &gpuv1.ClusterPolicySpec{
+				DCGMExporter: gpuv1.DCGMExporterSpec{
+					ServiceSpec: &gpuv1.DCGMExporterServiceConfig{
+						Type: corev1.ServiceTypeLoadBalancer,
+					},
+				},
+			},
+			expectedService: &corev1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "nvidia-dcgm-exporter",
+					Annotations: map[string]string{
+						"existing.annotation": "value",
+					},
+				},
+				Spec: corev1.ServiceSpec{
+					Type: corev1.ServiceTypeLoadBalancer,
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			err := TransformDCGMExporterService(tc.service, tc.cpSpec)
+			require.NoError(t, err)
+			require.EqualValues(t, tc.expectedService, tc.service)
+		})
+	}
+}

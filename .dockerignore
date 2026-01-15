@@ -3,3 +3,12 @@
 !**/*.go
 !**/*.mod
 !**/*.sum
+
+# Allow required directories and files for build
+!assets/
+!manifests/
+!validator/
+!hack/must-gather.sh
+!deployments/gpu-operator/crds/
+!deployments/gpu-operator/charts/node-feature-discovery/crds/
+!LICENSE

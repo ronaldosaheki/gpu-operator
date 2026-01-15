@@ -1,0 +1,29 @@
+# Complete multi-architecture GPU Operator build with all manifests
+FROM 773267254890.dkr.ecr.us-east-1.amazonaws.com/nvidia/gpu-operator:v25.3.2-workato
+
+# Get the target architecture
+ARG TARGETARCH
+
+# Copy our updated binaries with DCGM service annotations support
+COPY --chmod=755 gpu-operator-${TARGETARCH} /usr/bin/gpu-operator
+COPY --chmod=755 gpuop-cfg-${TARGETARCH} /usr/bin/gpuop-cfg  
+COPY --chmod=755 nvidia-validator-${TARGETARCH} /usr/bin/nvidia-validator
+
+# Copy all required manifests and assets (now properly included due to fixed .dockerignore)
+COPY assets /opt/gpu-operator/
+COPY manifests /opt/gpu-operator/manifests
+COPY validator/manifests /opt/validator/manifests
+COPY hack/must-gather.sh /usr/bin/gather
+
+# Add CRD resources for helm upgrades
+COPY deployments/gpu-operator/crds/nvidia.com_clusterpolicies.yaml /opt/gpu-operator/nvidia.com_clusterpolicies.yaml
+COPY deployments/gpu-operator/crds/nvidia.com_nvidiadrivers.yaml /opt/gpu-operator/nvidia.com_nvidiadrivers.yaml
+COPY deployments/gpu-operator/charts/node-feature-discovery/crds/nfd-api-crds.yaml /opt/gpu-operator/nfd-api-crds.yaml
+
+COPY LICENSE /licenses/
+
+# Update version info
+ENV VERSION=v25.3.2-workato-4
+ENV GIT_COMMIT=67c592ff-dirty
+
+ENTRYPOINT ["/usr/bin/gpu-operator"]
